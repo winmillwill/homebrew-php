@@ -61,6 +61,12 @@ class AbstractPhp < Formula
     depends_on 'homebrew/dupes/tidy' if build.include? 'with-tidy'
     depends_on 'unixodbc'
     depends_on 'homebrew/dupes/zlib'
+    if build.include? 'with-phpdbg'
+      depends_on 'autoconf' => :build
+      depends_on 're2c' => :build
+      depends_on 'flex' => :build
+      depends_on 'phpdbg'
+    end
 
     # Sanity Checks
     if build.include? 'with-pgsql'
@@ -81,6 +87,7 @@ class AbstractPhp < Formula
     option 'with-pdo-oci', 'Include Oracle databases (requries ORACLE_HOME be set)'
     option 'with-cgi', 'Enable building of the CGI executable (implies --without-apache)'
     option 'with-fpm', 'Enable building of the fpm SAPI executable (implies --without-apache)'
+    option 'with-phpdbg', 'Enable building of the phpdbg SAPI executable'
     option 'without-apache', 'Build without shared Apache 2.0 Handler module'
     option 'with-intl', 'Include internationalization support'
     option 'with-imap', 'Include IMAP extension'
@@ -204,7 +211,6 @@ INFO
       "--with-png-dir=#{Formula.factory('libpng').opt_prefix}",
       "--with-gettext=#{Formula.factory('gettext').opt_prefix}",
       "--with-snmp=/usr",
-      "--with-libedit",
       "--with-unixODBC=#{Formula.factory('unixodbc').opt_prefix}",
       "--with-pdo-odbc=unixODBC,#{Formula.factory('unixodbc').opt_prefix}",
       "--mandir=#{man}",
@@ -348,6 +354,7 @@ INFO
 
   def _install
     args = install_args
+    puts install_args
 
     system "./buildconf" if build.head?
     system "./configure", *args
@@ -368,6 +375,14 @@ INFO
     system "make"
     ENV.deparallelize # parallel install fails on some systems
     system "make install"
+
+    if build.include? 'with-phpdbg'
+      cp_r(Formula['phpdbg'].opt_prefix.to_s, 'sapi/phpdbg')
+      system './buildconf', '--force'
+      system './config.nice'
+      system 'make', '-j8'
+      system 'make', 'install-phpdbg'
+    end
 
     config_path.install default_config => "php.ini" unless File.exists? config_path+"php.ini"
 

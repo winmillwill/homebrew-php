@@ -18,9 +18,9 @@ class Php55 < AbstractPhp
     args << "--with-homebrew-openssl" if MacOS.version == :leopard
     args + [
       "--enable-zend-signals",
-      "--enable-dtrace",
-      "--enable-opcache",
+      "--enable-opcache"
     ]
+    args << "--enable-dtrace" unless build.include? 'with-phpdbg'
   end
 
   def php_version
